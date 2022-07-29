@@ -1,0 +1,147 @@
+/*
+  UDPSendReceive.pde:
+  This sketch receives UDP message strings, prints them to the serial port
+  and sends an "acknowledge" string back to the sender
+
+  A Processing sketch is included at the end of file that can be used to send
+  and received messages for testing with a computer.
+
+  created 21 Aug 2010
+  by Michael Margolis
+
+  This code is in the public domain.
+
+  adapted from Ethernet library examples
+*/
+
+
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+
+#ifndef STASSID
+#define STASSID "TP-LINK_ADE2"
+#define STAPSK  "147258369"
+#endif
+
+
+WiFiUDP Udp;
+bool enableServer=false;
+bool state=false;
+
+
+
+void SendChar(char c);
+void setup() {
+  pinMode(LED_BUILTIN, OUTPUT); 
+  Serial.begin(115200);
+  InitWifi();
+  InitUDPServer();
+  InitHCSR04();
+}
+void loop() {
+  Check_Sensor_HC_SR04();
+  StateCheck();
+  delay(100);
+}
+//-----------------------------StateCheck-----------------
+long lastChangedLEDTime=0;
+void StateCheck(){
+  if(lastChangedLEDTime+1000<millis()){
+    lastChangedLEDTime=millis();
+    digitalWrite(LED_BUILTIN, state);
+    state=!state;
+  }
+}
+//------------------------------Check Sensor HC-SR04----------------------------Start
+int Trig=D1;
+int Echo=D2;
+float cm; //距离变量
+float temps; //存储回波
+void InitHCSR04(){
+  pinMode(Trig, OUTPUT);
+  pinMode(Echo, INPUT);  
+}
+void Check_Sensor_HC_SR04(){
+    //给Trig发送一个低高低的短时间脉冲
+  digitalWrite(Trig, LOW); //给Trig发送一个低电平（初始化）
+  delayMicroseconds(2);    //等待 2微妙
+  digitalWrite(Trig,HIGH); //给Trig发送一个高电平
+  delayMicroseconds(10);    //等待 10微妙
+  digitalWrite(Trig, LOW); //给Trig发送一个低电平
+  temps = float(pulseIn(Echo, HIGH)); //存储回波等待时间,
+  //pulseIn函数会等待引脚变为HIGH,开始计算时间,再等待变为LOW并停止计时
+  //返回脉冲的长度
+  
+  //声速是:340m/1s 换算成 34000cm / 1000000μs = 34 / 1000
+  //因为发送到接收，是一来一回，我们只要单程就好了，所以➗2
+  //距离(厘米)  =  (回波时间 * (34 / 1000)) / 2
+  //简化后的计算公式为 (回波时间 * 17)/ 1000
+  
+  cm = (temps * 17 )/1000; //把回波时间换算成cm
+  if(cm<10){
+    SendChar('C');
+  }
+//  if(cm<50)
+//    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+//  else{
+//    digitalWrite(LED_BUILTIN, LOW);
+//  }
+}
+//------------------------------------UDPServer---------------------------------Start
+unsigned int localPort = 8888;      // local port to listen on
+// buffers for receiving and sending data
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE + 1]; //buffer to hold incoming packet,
+char  ReplyBuffer[] = "acknowledged\r\n";       // a string to send back
+void InitUDPServer(){
+if(enableServer){
+    Serial.printf("UDP server on port %d\n", localPort);
+    Udp.begin(localPort);
+  }
+}
+void ReadUDP(){
+    // if there's data available, read a packet
+  int packetSize = Udp.parsePacket();
+  if (enableServer && packetSize>0) {
+    Serial.printf("Received packet of size %d from %s:%d\n    (to %s:%d, free heap = %d B)\n",
+                  packetSize,
+                  Udp.remoteIP().toString().c_str(), Udp.remotePort(),
+                  Udp.destinationIP().toString().c_str(), Udp.localPort(),
+                  ESP.getFreeHeap());
+
+    // read the packet into packetBufffer
+    int n = Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
+    packetBuffer[n] = 0;
+    Serial.println("Contents:");
+    Serial.println(packetBuffer);
+
+    // send a reply, to the IP address and port that sent us the packet we received
+    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+    Udp.write(ReplyBuffer);
+    Udp.endPacket();
+  }
+}
+//------------------------------------InitWifi---------------------------------
+void InitWifi(){
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(STASSID, STAPSK);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print('.');
+    delay(500);
+  }
+  Serial.print("Connected! IP address: ");
+  Serial.println(WiFi.localIP());
+  
+}
+//------------------------------------Send UDP Char---------------------------------
+void SendChar(char c){
+    
+    // send a reply, to the IP address and port that sent us the packet we received
+    Udp.beginPacket("192.168.1.247", 9981);
+    Udp.write(c);
+    Udp.endPacket();
+}
+/*
+  test (shell/netcat):
+  --------------------
+	  nc -u 192.168.esp.address 8888
+*/
