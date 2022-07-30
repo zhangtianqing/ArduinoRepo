@@ -1,0 +1,99 @@
+/*
+整合系统功能：
+1.语音提示-串口选择mp3播放
+
+*/
+
+char val="";//接收串口发送过来的值
+
+int pin = 3;//接vpp引脚
+
+void setup()
+{
+    pinMode(pin,OUTPUT);
+    Serial.begin(9600);//设置波特率
+    Serial.println("请输入你要发送的数据:");//提示字符
+}
+ 
+void loop()
+{
+  while(Serial.available()>0){//检验在串口缓存区中是否有数据，如果有则返回1，没有就是0.
+    val = char(Serial.read());//Serial.read()一位一位的从串口缓存区里读数据
+    delay(10);
+
+  if(val=='S')
+    Sys_start();
+  if(val=='T')
+    Say_thanks();
+  }
+
+}
+
+//系统已启动-语音提示
+void Sys_start()
+{
+    //设置音量为20
+    SendData(0x0a);    //清空数字
+    SendData(0x02);    //音量20
+    SendData(0x00);
+    SendData(0x0c);    //设置音量
+    delay(2000);    //延时
+    
+    //选取曲目1播放
+    SendData(0x0a);//清空数字
+    SendData(0x01);//曲目数字，对应00001.mp3
+    SendData(0x0b);//选曲播放
+    delay(2000);
+    
+    //开始播放
+    //SendData(0x11);//开始播放
+    //delay(2000);
+}
+
+//谢谢使用-语音提示
+void Say_thanks()
+{
+    //设置音量为20
+    SendData(0x0a);    //清空数字
+    SendData(0x02);    //音量20
+    SendData(0x00);
+    SendData(0x0c);    //设置音量
+    delay(2000);    //延时
+    
+    //选取曲目2播放
+    SendData(0x0a);//清空数字
+    SendData(0x02);//曲目数字，对应00002.mp3
+    SendData(0x0b);//选曲播放
+    delay(2000);
+    
+    //开始播放
+    //SendData(0x11);//开始播放,这部分可以没有
+    //delay(2000);
+}
+
+void SendData (char addr )//发送函数
+{
+    digitalWrite(pin,HIGH); /*开始拉高*/
+    delayMicroseconds ( 1000 );
+    digitalWrite(pin,LOW); /*开始引导码*/
+    delayMicroseconds ( 3200 );/*此处延时最少要大于2ms*/
+    for (int i = 0; i < 8; i++ ) /*总共8位数据  */
+    {
+        digitalWrite(pin,HIGH);
+        if ( addr & 0x01 ) /*3:1表示数据位1,每个位用两个脉冲表示  */
+        {
+            delayMicroseconds ( 600 );
+            digitalWrite(pin,LOW);
+            delayMicroseconds ( 200 );
+        }
+        else        /*1：3表示数据位0 ,每个位用两个脉冲表示  */
+        {
+            delayMicroseconds (200);
+            digitalWrite(pin,LOW);
+            delayMicroseconds ( 600 );
+        }
+        addr >>= 1;
+    }
+    digitalWrite(pin,HIGH);
+}
+J
