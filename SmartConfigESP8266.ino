@@ -1,5 +1,4 @@
 #include <ESP8266WiFi.h>
-#include <ArduinoUniqueID.h>
 
 //无线网络初始化方法
 void initNetwork();
@@ -78,16 +77,4 @@ void initNetwork(){
   // Serial.println(WiFi.SSID());
   // //WIFI密码
   // Serial.println(WiFi.psk());
-}
-
-void SerialNum(){
-  UniqueID8dump(Serial);
-	Serial.print("UniqueID: ");
-	for (size_t i = 0; i < 8; i++)
-	{
-		if (UniqueID8[i] < 0x10)
-			Serial.print("0");
-		Serial.print(UniqueID8[i], HEX);
-		Serial.print(" ");
-	}
 }
