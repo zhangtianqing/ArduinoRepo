@@ -1,3 +1,9 @@
+// @zhangtianqing
+//基于Wemos D1 R2 Mini（ESP8266）的基础文件  
+//功能1:SmartConfig(App:https://objects.githubusercontent.com/github-production-release-asset-2e65be/34372655/a9d1553f-9643-497f-9833-09b2d0d24c0c?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20221208%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20221208T044444Z&X-Amz-Expires=300&X-Amz-Signature=a3d98237a79412a6110a814501c4c4fb4a12e5a8d5f70fc78c3c782465781f86&X-Amz-SignedHeaders=host&actor_id=0&key_id=0&repo_id=34372655&response-content-disposition=attachment%3B%20filename%3Desptouch-v2.3.2.apk&response-content-type=application%2Fvnd.android.package-archive)
+//功能2:无线OTA
+//功能3:自动上线机制
+
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <EEPROM.h>
