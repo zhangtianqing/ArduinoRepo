@@ -1,9 +1,12 @@
 // @zhangtianqing
-//基于Wemos D1 R2 Mini（ESP8266）的基础文件  
+//基于Wemos D1 R2 Mini（ESP8266）的基础外围代码  
 //功能1:SmartConfig(App:https://objects.githubusercontent.com/github-production-release-asset-2e65be/34372655/a9d1553f-9643-497f-9833-09b2d0d24c0c?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20221208%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20221208T044444Z&X-Amz-Expires=300&X-Amz-Signature=a3d98237a79412a6110a814501c4c4fb4a12e5a8d5f70fc78c3c782465781f86&X-Amz-SignedHeaders=host&actor_id=0&key_id=0&repo_id=34372655&response-content-disposition=attachment%3B%20filename%3Desptouch-v2.3.2.apk&response-content-type=application%2Fvnd.android.package-archive)
 //功能2:无线OTA
 //功能3:自动上线机制
 
+//第一次使用时，强制使用SmartConfig配网
+//之后使用会自动调用储存了的WiFi配置自动联网
+//如果需要强制刷新配置信息，需要将 forceReSmartConfigPin 引脚接地
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <EEPROM.h>
@@ -29,10 +32,21 @@ struct WifiConfig { //Wifi配置结构体
   char stapsw[64];   //定义配网得到的WIFI密码长度(最大64字节)
 };
 WifiConfig config;//Wifi配置结构体对象
-int forceReSmartConfigPin = D0;//强制接地会强制进入配网模式 的引脚
+int forceReSmartConfigPin = D0;//接地会强制进入配网模式 的引脚
 String ssid;
 String psw;
 
+//业务逻辑开始>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+//等效Setup方法
+void beforeSetup(){
+  Serial.println("setup");
+}
+//等效Loop方法
+void todo(){
+  Serial.println("loop");
+}
+//业务逻辑结束<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 void toggleLED();
 void initNetwork();
 
@@ -46,16 +60,18 @@ void setup() {
   initOTA();
   initOnline();
   digitalWrite(LED_BUILTIN, HIGH);
+  beforeSetup();
 }
 
 void loop() {
   checkOnline();
   checkOTA();
+  todo();
 }
+
 
 void toggleLED() {
   static int pinStatus = LOW;
-
   if (pinStatus == HIGH)
     pinStatus = LOW;
   else
@@ -75,14 +91,14 @@ void initNetwork() {
       } else {
         digitalWrite(LED_BUILTIN, LOW);  //加个LED慢闪，确认联网是否成功！成功就不闪了。
         delay(1000);
-        digitalWrite(LED_BUILTIN, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);  
         delay(1000);
       }
     }
   } else {
     smartConfig();
   }
-  //ip
+  //ipL
   Serial.println(WiFi.localIP());
 }
 void smartConfig() {
